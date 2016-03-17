@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>A Mjn Blog</title>
+  
+  <link href="/atom.xml" rel="self"/>
+  
+  <link href="https://github.com/mjnhmd/"/>
+  <updated>2016-03-17T11:55:39.967Z</updated>
+  <id>https://github.com/mjnhmd/</id>
+  
+  <author>
+    <name>MJN</name>
+    
+  </author>
+  
+  <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>吃我你而我篱疠篱</title>
+    <link href="https://github.com/mjnhmd/2016/03/17/%E5%90%83%E6%88%91%E4%BD%A0%E8%80%8C%E6%88%91%E7%AF%B1%E7%96%A0%E7%AF%B1/"/>
+    <id>https://github.com/mjnhmd/2016/03/17/吃我你而我篱疠篱/</id>
+    <published>2016-03-17T11:55:39.000Z</published>
+    <updated>2016-03-17T11:55:39.967Z</updated>
+    
+    <content type="html"></content>
+    
+    <summary type="html">
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title>RxJava</title>
+    <link href="https://github.com/mjnhmd/2016/03/16/RxJava/"/>
+    <id>https://github.com/mjnhmd/2016/03/16/RxJava/</id>
+    <published>2016-03-16T10:38:08.000Z</published>
+    <updated>2016-03-16T12:28:25.319Z</updated>
+    
+    <content type="html">&lt;h1 id=&quot;RxJava&quot;&gt;&lt;a href=&quot;#RxJava&quot; class=&quot;headerlink&quot; title=&quot;RxJava&quot;&gt;&lt;/a&gt;RxJava&lt;/h1&gt;&lt;blockquote&gt;
+&lt;p&gt;看了许多RxJava文章,但是只有真正用了，才能学会。所以这次基于原来的代码进行一次重构，改成RxJava实现。&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;###原始结构：&lt;br&gt;以前的代码是一个定位请求模块。大概结构是这样的：&lt;br&gt;&lt;img src=&quot;http://7xry4c.com1.z0.glb.clouddn.com//rxjava/locationmodel-old.png&quot; alt=&quot; &quot; title=&quot;mjnhmd&quot;&gt;&lt;br&gt;&lt;/p&gt;
+&lt;p&gt;其实还不错，用的也是观察者模式。&lt;br&gt;现在换一个角度来看，更符合RxJava的思路，应该是这样的：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;http://7xry4c.com1.z0.glb.clouddn.com/%2Frxjava%2Flocationmodelrx.png&quot; alt=&quot; &quot;&gt;&lt;br&gt;&lt;br&gt;Service相当于是一个数据源，它得到数据之后通知Observable，Observable相对于调用者也是一个数据源，它得到service的数据后再通知调用者。&lt;/p&gt;
+&lt;p&gt;observal和后边的调用几乎不用怎么改。主要是理一下locationservice的实现。由于涉及多种方式的请求数据，还有请求商圈等数据。代码又乱又长。看完一遍简直晕死！&lt;/p&gt;
+</content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;RxJava&quot;&gt;&lt;a href=&quot;#RxJava&quot; class=&quot;headerlink&quot; title=&quot;RxJava&quot;&gt;&lt;/a&gt;RxJava&lt;/h1&gt;&lt;blockquote&gt;
+&lt;p&gt;看了许多RxJava文章,但是只有真正用了，才能学会。所以这次基于原来的代码进行一
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title>Hello World</title>
+    <link href="https://github.com/mjnhmd/2016/03/16/hello-world/"/>
+    <id>https://github.com/mjnhmd/2016/03/16/hello-world/</id>
+    <published>2016-03-16T02:41:26.515Z</published>
+    <updated>2016-03-16T07:06:57.632Z</updated>
+    
+    <content type="html">&lt;p&gt;Welcome to &lt;a href=&quot;https://hexo.io/&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;Hexo&lt;/a&gt;! This is your very first post. Check &lt;a href=&quot;https://hexo.io/docs/&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;documentation&lt;/a&gt; for more info. If you get any problems when using Hexo, you can find the answer in &lt;a href=&quot;https://hexo.io/docs/troubleshooting.html&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;troubleshooting&lt;/a&gt; or you can ask me on &lt;a href=&quot;https://github.com/hexojs/hexo/issues&quot;&gt;GitHub&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id=&quot;Quick-Start&quot;&gt;&lt;a href=&quot;#Quick-Start&quot; class=&quot;headerlink&quot; title=&quot;Quick Start&quot;&gt;&lt;/a&gt;Quick Start&lt;/h2&gt;&lt;h3 id=&quot;Create-a-new-post&quot;&gt;&lt;a href=&quot;#Create-a-new-post&quot; class=&quot;headerlink&quot; title=&quot;Create a new post&quot;&gt;&lt;/a&gt;Create a new post&lt;/h3&gt;&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;$ hexo new &lt;span class=&quot;string&quot;&gt;&quot;My New Post&quot;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;More info: &lt;a href=&quot;https://hexo.io/docs/writing.html&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;Writing&lt;/a&gt;&lt;/p&gt;
+&lt;h3 id=&quot;Run-server&quot;&gt;&lt;a href=&quot;#Run-server&quot; class=&quot;headerlink&quot; title=&quot;Run server&quot;&gt;&lt;/a&gt;Run server&lt;/h3&gt;&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;$ hexo server&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;More info: &lt;a href=&quot;https://hexo.io/docs/server.html&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;Server&lt;/a&gt;&lt;/p&gt;
+&lt;h3 id=&quot;Generate-static-files&quot;&gt;&lt;a href=&quot;#Generate-static-files&quot; class=&quot;headerlink&quot; title=&quot;Generate static files&quot;&gt;&lt;/a&gt;Generate static files&lt;/h3&gt;&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;$ hexo generate&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;More info: &lt;a href=&quot;https://hexo.io/docs/generating.html&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;Generating&lt;/a&gt;&lt;/p&gt;
+&lt;h3 id=&quot;Deploy-to-remote-sites&quot;&gt;&lt;a href=&quot;#Deploy-to-remote-sites&quot; class=&quot;headerlink&quot; title=&quot;Deploy to remote sites&quot;&gt;&lt;/a&gt;Deploy to remote sites&lt;/h3&gt;&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;$ hexo deploy&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;More info: &lt;a href=&quot;https://hexo.io/docs/deployment.html&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;Deployment&lt;/a&gt;&lt;/p&gt;
+</content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;Welcome to &lt;a href=&quot;https://hexo.io/&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;Hexo&lt;/a&gt;! This is your very first post. Check &lt;a href=&quot;https://hexo.
+    
+    </summary>
+    
+    
+  </entry>
+  
+</feed>
