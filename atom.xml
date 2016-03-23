@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://github.com/mjnhmd/"/>
-  <updated>2016-03-17T11:55:39.967Z</updated>
+  <updated>2016-03-23T12:55:07.208Z</updated>
   <id>https://github.com/mjnhmd/</id>
   
   <author>
@@ -16,41 +16,129 @@
   <generator uri="http://hexo.io/">Hexo</generator>
   
   <entry>
-    <title>吃我你而我篱疠篱</title>
-    <link href="https://github.com/mjnhmd/2016/03/17/%E5%90%83%E6%88%91%E4%BD%A0%E8%80%8C%E6%88%91%E7%AF%B1%E7%96%A0%E7%AF%B1/"/>
-    <id>https://github.com/mjnhmd/2016/03/17/吃我你而我篱疠篱/</id>
-    <published>2016-03-17T11:55:39.000Z</published>
-    <updated>2016-03-17T11:55:39.967Z</updated>
+    <title>Handler实现原理</title>
+    <link href="https://github.com/mjnhmd/2016/03/23/Handler%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86/"/>
+    <id>https://github.com/mjnhmd/2016/03/23/Handler实现原理/</id>
+    <published>2016-03-23T12:52:31.000Z</published>
+    <updated>2016-03-23T12:55:07.208Z</updated>
     
-    <content type="html"></content>
-    
-    <summary type="html">
-    
-    </summary>
-    
-    
-  </entry>
-  
-  <entry>
-    <title>RxJava</title>
-    <link href="https://github.com/mjnhmd/2016/03/16/RxJava/"/>
-    <id>https://github.com/mjnhmd/2016/03/16/RxJava/</id>
-    <published>2016-03-16T10:38:08.000Z</published>
-    <updated>2016-03-16T12:28:25.319Z</updated>
-    
-    <content type="html">&lt;h1 id=&quot;RxJava&quot;&gt;&lt;a href=&quot;#RxJava&quot; class=&quot;headerlink&quot; title=&quot;RxJava&quot;&gt;&lt;/a&gt;RxJava&lt;/h1&gt;&lt;blockquote&gt;
-&lt;p&gt;看了许多RxJava文章,但是只有真正用了，才能学会。所以这次基于原来的代码进行一次重构，改成RxJava实现。&lt;/p&gt;
-&lt;/blockquote&gt;
-&lt;p&gt;###原始结构：&lt;br&gt;以前的代码是一个定位请求模块。大概结构是这样的：&lt;br&gt;&lt;img src=&quot;http://7xry4c.com1.z0.glb.clouddn.com//rxjava/locationmodel-old.png&quot; alt=&quot; &quot; title=&quot;mjnhmd&quot;&gt;&lt;br&gt;&lt;/p&gt;
-&lt;p&gt;其实还不错，用的也是观察者模式。&lt;br&gt;现在换一个角度来看，更符合RxJava的思路，应该是这样的：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&quot;http://7xry4c.com1.z0.glb.clouddn.com/%2Frxjava%2Flocationmodelrx.png&quot; alt=&quot; &quot;&gt;&lt;br&gt;&lt;br&gt;Service相当于是一个数据源，它得到数据之后通知Observable，Observable相对于调用者也是一个数据源，它得到service的数据后再通知调用者。&lt;/p&gt;
-&lt;p&gt;observal和后边的调用几乎不用怎么改。主要是理一下locationservice的实现。由于涉及多种方式的请求数据，还有请求商圈等数据。代码又乱又长。看完一遍简直晕死！&lt;/p&gt;
+    <content type="html">&lt;p&gt;今天在尝试把百度定位sdk的初始化转移到子线程时，遇到了一个问题：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;java.lang.RuntimeException: Can&amp;apos;t create handler inside thread that has not called Looper.prepare()
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;这个问题并不少见，网上一搜有很多。&lt;br&gt;解决方法就是在创建handler时传入Looper.getMainLooper()。&lt;/p&gt;
+&lt;p&gt;但是我发现我在子线程执行的代码里并没有创建handler，只是创建了一个百度sdk的定位类。&lt;br&gt;显然是在这个类里边创建了handler，导致了这个问题。显然这个方法解决不了我的问题，由于handler并不是我创建的，我并没有办法给它传进去一个looper。&lt;/p&gt;
+&lt;p&gt;只能看一下后台的实现原理，决定怎么解&lt;/p&gt;
+&lt;p&gt;首先看下源码，在哪里报的错：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;public Handler(Callback callback, boolean async) {
+    if (FIND_POTENTIAL_LEAKS) {
+        final Class&amp;lt;? extends Handler&amp;gt; klass = getClass();
+        if ((klass.isAnonymousClass() || klass.isMemberClass() || klass.isLocalClass()) &amp;amp;&amp;amp;
+                (klass.getModifiers() &amp;amp; Modifier.STATIC) == 0) {
+            Log.w(TAG, &amp;quot;The following Handler class should be static or leaks might occur: &amp;quot; +
+                klass.getCanonicalName());
+        }
+    }
+
+    mLooper = Looper.myLooper();
+    if (mLooper == null) {
+        throw new RuntimeException(
+            &amp;quot;Can&amp;apos;t create handler inside thread that has not called Looper.prepare()&amp;quot;);
+    }
+    mQueue = mLooper.mQueue;
+    mCallback = callback;
+    mAsynchronous = async;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;可以看到是在handler的构造函数中抛出的异常,从代码和错误内容都不难看出是获取looper失败。那么我们再看一下这个Looper.myLooper()方法：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;public static Looper myLooper() {
+    return sThreadLocal.get();
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;它只是返回了一个线程里的looper，显然是这个线程里没有looper造成的。线程里的looper是在哪里设置的呢?我们通过错误的内容“has not called Looper.prepare()”可以推断出应该就是prepare()方法了：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;public static void prepare() {
+    prepare(true);
+}
+
+private static void prepare(boolean quitAllowed) {
+    if (sThreadLocal.get() != null) {
+        throw new RuntimeException(&amp;quot;Only one Looper may be created per thread&amp;quot;);
+    }
+    sThreadLocal.set(new Looper(quitAllowed));
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;这里可以看到一个线程里只能有一个looper。&lt;/p&gt;
+&lt;p&gt;那么Looper到底是干嘛的呢？&lt;br&gt;首先我们都知道收到消息都是在handleMessage()方法处理的。我们就从最熟悉的地方找起，handleMessage方法是在哪调的呢：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;public void dispatchMessage(Message msg) {
+    if (msg.callback != null) {
+        handleCallback(msg);
+    } else {
+        if (mCallback != null) {
+            if (mCallback.handleMessage(msg)) {
+                return;
+            }
+        }
+        handleMessage(msg);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;可以看到是在dispatchMessage(Message msg)里调用的。这里先判断有没有callback，也就是Runnable，如果自己写了runnable，那么就交由runnable处理&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;private static void handleCallback(Message message) {
+    message.callback.run();
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;如果没有，则调用handleMessage()方法。&lt;/p&gt;
+&lt;p&gt;继续往上找， dispatchMessage(Message msg)是在这里调用的：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;public static void loop() {
+    final Looper me = myLooper();
+    if (me == null) {
+        throw new RuntimeException(&amp;quot;No Looper; Looper.prepare() wasn&amp;apos;t called on this thread.&amp;quot;);
+    }
+    final MessageQueue queue = me.mQueue;
+
+    for (;;) {
+        Message msg = queue.next(); // might block
+        if (msg == null) {
+            // No message indicates that the message queue is quitting.
+            return;
+        }
+        msg.target.dispatchMessage(msg);
+        msg.recycleUnchecked();
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;这里有很多代码，我们只捡关心的看，首先他拿到了当前的looper，然后从中获取了一个队列，也就是消息队列。可以知道一个looper里会有一个消息队列。然后是一个死循环，循环获取队列中的message，然后调用之前的dispatchMessage(msg)。这样就把整个过程连起来了：&lt;/p&gt;
+&lt;p&gt;Looper维持一个消息队列，然后不断的从队列里边拿出消息，然后交给handelr处理。还差一点，就是队列里的消息是从哪来的呢。这个相信用过的人都知道，自然就是sendMessage：&lt;br&gt;     public final boolean sendMessage(Message msg)&lt;br&gt;    {&lt;br&gt;        return sendMessageDelayed(msg, 0);&lt;br&gt;    }&lt;br&gt;可以看到这是一个包装，经过一系列的调用链，最终调用到了&lt;br&gt;    queue.enqueueMessage(msg, uptimeMillis)&lt;br&gt;这个queue就是从looper里获取到的那个消息队列，这个方法里就是一个典型的队列链表操作：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt; boolean enqueueMessage(Message msg, long when) {
+    synchronized (this) {
+        msg.markInUse();
+        msg.when = when;
+        Message p = mMessages;
+        boolean needWake;
+        if (p == null || when == 0 || when &amp;lt; p.when) {
+            // New head, wake up the event queue if blocked.
+            msg.next = p;
+            mMessages = msg;
+            needWake = mBlocked;
+        } else {
+            needWake = mBlocked &amp;amp;&amp;amp; p.target == null &amp;amp;&amp;amp; msg.isAsynchronous();
+            Message prev;
+            for (;;) {
+                prev = p;
+                p = p.next;
+                if (p == null || when &amp;lt; p.when) {
+                    break;
+                }
+                if (needWake &amp;amp;&amp;amp; p.isAsynchronous()) {
+                    needWake = false;
+                }
+            }
+            msg.next = p; // invariant: p == prev.next
+            prev.next = msg;
+        }
+    }
+    return true;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;好了现在就全明白了，handler拿着一个looper，不断地往looper手里的消息队列里放消息，looper拿着这个消息队列又不断地往出取，让handler来处理消息。&lt;/p&gt;
+&lt;p&gt;至于最开始的问题，已经很简单了。只需要在线程中调用Looper.prepare()在线程中放一个looper,然后在最后执行Looper.loop()，让它不断的往出取消息就可以了。即使不直接往handler里传入looper，handler也会在构建时自动从线程中拿到looper。&lt;/p&gt;
 </content>
     
     <summary type="html">
     
-      &lt;h1 id=&quot;RxJava&quot;&gt;&lt;a href=&quot;#RxJava&quot; class=&quot;headerlink&quot; title=&quot;RxJava&quot;&gt;&lt;/a&gt;RxJava&lt;/h1&gt;&lt;blockquote&gt;
-&lt;p&gt;看了许多RxJava文章,但是只有真正用了，才能学会。所以这次基于原来的代码进行一
+      &lt;p&gt;今天在尝试把百度定位sdk的初始化转移到子线程时，遇到了一个问题：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;java.lang.RuntimeException: Can&amp;apos;t create handler inside thread that has not called 
     
     </summary>
     

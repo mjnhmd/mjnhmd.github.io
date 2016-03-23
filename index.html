@@ -81,20 +81,131 @@
         <header class="article-info clearfix">
   <h1 itemprop="name">
     
-      <a href="/2016/03/17/吃我你而我篱疠篱/" title="吃我你而我篱疠篱" itemprop="url">吃我你而我篱疠篱</a>
+      <a href="/2016/03/23/Handler实现原理/" title="Handler实现原理" itemprop="url">Handler实现原理</a>
   </h1>
   <p class="article-author">By
        
 		<a href="/about" title="MJN" target="_blank" itemprop="author">MJN</a>
 		
   <p class="article-time">
-    <time datetime="2016-03-17T11:55:39.000Z" itemprop="datePublished"> 发表于 2016-03-17</time>
+    <time datetime="2016-03-23T12:52:31.000Z" itemprop="datePublished"> 发表于 2016-03-23</time>
     
   </p>
 </header>
     <div class="article-content">
         
-        
+        <p>今天在尝试把百度定位sdk的初始化转移到子线程时，遇到了一个问题：</p>
+<pre><code>java.lang.RuntimeException: Can&apos;t create handler inside thread that has not called Looper.prepare()
+</code></pre><p>这个问题并不少见，网上一搜有很多。<br>解决方法就是在创建handler时传入Looper.getMainLooper()。</p>
+<p>但是我发现我在子线程执行的代码里并没有创建handler，只是创建了一个百度sdk的定位类。<br>显然是在这个类里边创建了handler，导致了这个问题。显然这个方法解决不了我的问题，由于handler并不是我创建的，我并没有办法给它传进去一个looper。</p>
+<p>只能看一下后台的实现原理，决定怎么解</p>
+<p>首先看下源码，在哪里报的错：</p>
+<pre><code>public Handler(Callback callback, boolean async) {
+    if (FIND_POTENTIAL_LEAKS) {
+        final Class&lt;? extends Handler&gt; klass = getClass();
+        if ((klass.isAnonymousClass() || klass.isMemberClass() || klass.isLocalClass()) &amp;&amp;
+                (klass.getModifiers() &amp; Modifier.STATIC) == 0) {
+            Log.w(TAG, &quot;The following Handler class should be static or leaks might occur: &quot; +
+                klass.getCanonicalName());
+        }
+    }
+
+    mLooper = Looper.myLooper();
+    if (mLooper == null) {
+        throw new RuntimeException(
+            &quot;Can&apos;t create handler inside thread that has not called Looper.prepare()&quot;);
+    }
+    mQueue = mLooper.mQueue;
+    mCallback = callback;
+    mAsynchronous = async;
+}
+</code></pre><p>可以看到是在handler的构造函数中抛出的异常,从代码和错误内容都不难看出是获取looper失败。那么我们再看一下这个Looper.myLooper()方法：</p>
+<pre><code>public static Looper myLooper() {
+    return sThreadLocal.get();
+}
+</code></pre><p>它只是返回了一个线程里的looper，显然是这个线程里没有looper造成的。线程里的looper是在哪里设置的呢?我们通过错误的内容“has not called Looper.prepare()”可以推断出应该就是prepare()方法了：</p>
+<pre><code>public static void prepare() {
+    prepare(true);
+}
+
+private static void prepare(boolean quitAllowed) {
+    if (sThreadLocal.get() != null) {
+        throw new RuntimeException(&quot;Only one Looper may be created per thread&quot;);
+    }
+    sThreadLocal.set(new Looper(quitAllowed));
+}
+</code></pre><p>这里可以看到一个线程里只能有一个looper。</p>
+<p>那么Looper到底是干嘛的呢？<br>首先我们都知道收到消息都是在handleMessage()方法处理的。我们就从最熟悉的地方找起，handleMessage方法是在哪调的呢：</p>
+<pre><code>public void dispatchMessage(Message msg) {
+    if (msg.callback != null) {
+        handleCallback(msg);
+    } else {
+        if (mCallback != null) {
+            if (mCallback.handleMessage(msg)) {
+                return;
+            }
+        }
+        handleMessage(msg);
+    }
+}
+</code></pre><p>可以看到是在dispatchMessage(Message msg)里调用的。这里先判断有没有callback，也就是Runnable，如果自己写了runnable，那么就交由runnable处理</p>
+<pre><code>private static void handleCallback(Message message) {
+    message.callback.run();
+}
+</code></pre><p>如果没有，则调用handleMessage()方法。</p>
+<p>继续往上找， dispatchMessage(Message msg)是在这里调用的：</p>
+<pre><code>public static void loop() {
+    final Looper me = myLooper();
+    if (me == null) {
+        throw new RuntimeException(&quot;No Looper; Looper.prepare() wasn&apos;t called on this thread.&quot;);
+    }
+    final MessageQueue queue = me.mQueue;
+
+    for (;;) {
+        Message msg = queue.next(); // might block
+        if (msg == null) {
+            // No message indicates that the message queue is quitting.
+            return;
+        }
+        msg.target.dispatchMessage(msg);
+        msg.recycleUnchecked();
+    }
+}
+</code></pre><p>这里有很多代码，我们只捡关心的看，首先他拿到了当前的looper，然后从中获取了一个队列，也就是消息队列。可以知道一个looper里会有一个消息队列。然后是一个死循环，循环获取队列中的message，然后调用之前的dispatchMessage(msg)。这样就把整个过程连起来了：</p>
+<p>Looper维持一个消息队列，然后不断的从队列里边拿出消息，然后交给handelr处理。还差一点，就是队列里的消息是从哪来的呢。这个相信用过的人都知道，自然就是sendMessage：<br>     public final boolean sendMessage(Message msg)<br>    {<br>        return sendMessageDelayed(msg, 0);<br>    }<br>可以看到这是一个包装，经过一系列的调用链，最终调用到了<br>    queue.enqueueMessage(msg, uptimeMillis)<br>这个queue就是从looper里获取到的那个消息队列，这个方法里就是一个典型的队列链表操作：</p>
+<pre><code> boolean enqueueMessage(Message msg, long when) {
+    synchronized (this) {
+        msg.markInUse();
+        msg.when = when;
+        Message p = mMessages;
+        boolean needWake;
+        if (p == null || when == 0 || when &lt; p.when) {
+            // New head, wake up the event queue if blocked.
+            msg.next = p;
+            mMessages = msg;
+            needWake = mBlocked;
+        } else {
+            needWake = mBlocked &amp;&amp; p.target == null &amp;&amp; msg.isAsynchronous();
+            Message prev;
+            for (;;) {
+                prev = p;
+                p = p.next;
+                if (p == null || when &lt; p.when) {
+                    break;
+                }
+                if (needWake &amp;&amp; p.isAsynchronous()) {
+                    needWake = false;
+                }
+            }
+            msg.next = p; // invariant: p == prev.next
+            prev.next = msg;
+        }
+    }
+    return true;
+}
+</code></pre><p>好了现在就全明白了，handler拿着一个looper，不断地往looper手里的消息队列里放消息，looper拿着这个消息队列又不断地往出取，让handler来处理消息。</p>
+<p>至于最开始的问题，已经很简单了。只需要在线程中调用Looper.prepare()在线程中放一个looper,然后在最后执行Looper.loop()，让它不断的往出取消息就可以了。即使不直接往handler里传入looper，handler也会在构建时自动从线程中拿到looper。</p>
+
         
         
         <p class="article-more-link">
@@ -113,66 +224,7 @@
 <div class="comments-count">
 	
 	  	<span></span>
-		<a href="/2016/03/17/吃我你而我篱疠篱/#comments" class="ds-thread-count comments-count-link" data-thread-key="2016/03/17/吃我你而我篱疠篱/" data-count-type="comments">&nbsp;</a>
-	
-</div>
-
-</footer>
-
-
-    </article>
-
-
-
-
-
-
-   
-    
-    <article class="post-expand post" itemprop="articleBody"> 
-        <header class="article-info clearfix">
-  <h1 itemprop="name">
-    
-      <a href="/2016/03/16/RxJava/" title="RxJava" itemprop="url">RxJava</a>
-  </h1>
-  <p class="article-author">By
-       
-		<a href="/about" title="MJN" target="_blank" itemprop="author">MJN</a>
-		
-  <p class="article-time">
-    <time datetime="2016-03-16T10:38:08.000Z" itemprop="datePublished"> 发表于 2016-03-16</time>
-    
-  </p>
-</header>
-    <div class="article-content">
-        
-        <h1 id="RxJava"><a href="#RxJava" class="headerlink" title="RxJava"></a>RxJava</h1><blockquote>
-<p>看了许多RxJava文章,但是只有真正用了，才能学会。所以这次基于原来的代码进行一次重构，改成RxJava实现。</p>
-</blockquote>
-<p>###原始结构：<br>以前的代码是一个定位请求模块。大概结构是这样的：<br><img src="http://7xry4c.com1.z0.glb.clouddn.com//rxjava/locationmodel-old.png" alt=" " title="mjnhmd"><br></p>
-<p>其实还不错，用的也是观察者模式。<br>现在换一个角度来看，更符合RxJava的思路，应该是这样的：</p>
-<p><img src="http://7xry4c.com1.z0.glb.clouddn.com/%2Frxjava%2Flocationmodelrx.png" alt=" "><br><br>Service相当于是一个数据源，它得到数据之后通知Observable，Observable相对于调用者也是一个数据源，它得到service的数据后再通知调用者。</p>
-<p>observal和后边的调用几乎不用怎么改。主要是理一下locationservice的实现。由于涉及多种方式的请求数据，还有请求商圈等数据。代码又乱又长。看完一遍简直晕死！</p>
-
-        
-        
-        <p class="article-more-link">
-          
-       </p>
-    </div>
-    <footer class="article-footer clearfix">
-<div class="article-catetags">
-
-
-</div>
-
-
-
-
-<div class="comments-count">
-	
-	  	<span></span>
-		<a href="/2016/03/16/RxJava/#comments" class="ds-thread-count comments-count-link" data-thread-key="2016/03/16/RxJava/" data-count-type="comments">&nbsp;</a>
+		<a href="/2016/03/23/Handler实现原理/#comments" class="ds-thread-count comments-count-link" data-thread-key="2016/03/23/Handler实现原理/" data-count-type="comments">&nbsp;</a>
 	
 </div>
 
@@ -258,7 +310,7 @@
   
 <div class="github-card">
 <p class="asidetitle">Github 名片</p>
-<div class="github-card" data-github="https://github.com/mjnhmd" data-width="220" data-height="119" data-theme="medium">
+<div class="github-card" data-github="mjnhmd" data-width="220" data-height="119" data-theme="medium">
 <script type="text/javascript" src="//cdn.jsdelivr.net/github-cards/latest/widget.js" ></script>
 </div>
   </div>
@@ -285,7 +337,7 @@
 
   <div class="weiboshow">
   <p class="asidetitle">新浪微博</p>
-    <iframe width="100%" height="119" class="share_self"  frameborder="0" scrolling="no" src="http://widget.weibo.com/weiboshow/index.php?language=&width=0&height=119&fansRow=2&ptype=1&speed=0&skin=9&isTitle=1&noborder=1&isWeibo=0&isFans=0&uid=null&verifier=b3593ceb&dpc=1"></iframe>
+    <iframe width="100%" height="119" class="share_self"  frameborder="0" scrolling="no" src="http://widget.weibo.com/weiboshow/index.php?language=&width=0&height=119&fansRow=2&ptype=1&speed=0&skin=9&isTitle=1&noborder=1&isWeibo=0&isFans=0&uid=null&verifier=&dpc=1"></iframe>
 </div>
 
 
@@ -302,15 +354,13 @@
 	
 	<section class="info">
 		<p> Hello ,I&#39;m mjn in 58ganji. <br/>
-			This is my blog,believe it or not.</p>
+			This is my blog,  believe it or not.</p>
 	</section>
 	 
 	<div class="social-font" class="clearfix">
 		
-		<a href="http://weibo.com/2176287895" target="_blank" class="icon-weibo" title="微博"></a>
 		
-		
-		<a href="https://github.com/https://github.com/mjnhmd" target="_blank" class="icon-github" title="github"></a>
+		<a href="https://github.com/mjnhmd" target="_blank" class="icon-github" title="github"></a>
 		
 		
 		
