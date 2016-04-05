@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://github.com/mjnhmd/"/>
-  <updated>2016-03-23T12:55:07.208Z</updated>
+  <updated>2016-04-05T10:38:43.350Z</updated>
   <id>https://github.com/mjnhmd/</id>
   
   <author>
@@ -16,11 +16,253 @@
   <generator uri="http://hexo.io/">Hexo</generator>
   
   <entry>
+    <title>CoordinatorLayout调用原理源码解析</title>
+    <link href="https://github.com/mjnhmd/2016/04/05/CoordinatorLayout%E8%B0%83%E7%94%A8%E5%8E%9F%E7%90%86%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/"/>
+    <id>https://github.com/mjnhmd/2016/04/05/CoordinatorLayout调用原理源码解析/</id>
+    <published>2016-04-05T10:15:54.000Z</published>
+    <updated>2016-04-05T10:38:43.350Z</updated>
+    
+    <content type="html">&lt;h2 id=&quot;获取Behavior&quot;&gt;&lt;a href=&quot;#获取Behavior&quot; class=&quot;headerlink&quot; title=&quot;获取Behavior&quot;&gt;&lt;/a&gt;获取Behavior&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;CoordinatorLayout中子view关联的动作主要由Behavior实现。&lt;br&gt;系统控件中往往把behavior作为内部类，自己实现，比如AppbarLayout。&lt;br&gt;当然我们也可以自己实现自定义的Behavior来完成我们需要的动作。&lt;br&gt;自定义Behavior时，我们需要在xml代码中实现相应属性，例如：&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;pre&gt;&lt;code&gt;app:layout_behavior=&amp;quot;com.wuba.views.CustomAppbarBehavior&amp;quot;
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;这个就是我们首页动画实现的自定义的behavior。&lt;br&gt;在xml中实现之后，必然会在代码中获取这个behavior:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;public static class LayoutParams extends MarginLayoutParams {
+    CoordinatorLayout.Behavior mBehavior;
+
+    LayoutParams(Context context, AttributeSet attrs) {
+    super(context, attrs);
+    TypedArray a = context.obtainStyledAttributes(attrs, styleable.CoordinatorLayout_LayoutParams);
+    this.mBehaviorResolved = a.hasValue(styleable.CoordinatorLayout_LayoutParams_layout_behavior);
+    if(this.mBehaviorResolved) {
+        this.mBehavior = CoordinatorLayout.parseBehavior(context, attrs, a.getString(styleable.CoordinatorLayout_LayoutParams_layout_behavior));//这个方法获取到behavior的实例
+    }
+    a.recycle();
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;可以看到，获取behavior的方式和很多自定义view的方式是一样的,通过自定义属性来获取。我们具体看一下parseBehavior()方法是怎么实现的：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;static CoordinatorLayout.Behavior parseBehavior(Context context, AttributeSet attrs, String name) {
+    if(TextUtils.isEmpty(name)) {
+        return null;
+    } else {
+    String fullName;
+    if(name.startsWith(&amp;quot;.&amp;quot;)) {//如果以.开始，就拼接上包名
+        fullName = context.getPackageName() + name;
+    } else if(name.indexOf(46) &amp;gt;= 0) {//这里我猜46是类名的最大长度，大于46由没有以.开始，说明它本身就是完整包名
+        fullName = name;
+    } else {
+        fullName = WIDGET_PACKAGE_NAME + &amp;apos;.&amp;apos; + name;//否则就是包名.类名
+    }
+
+    try {
+        Object e = (Map)sConstructors.get();
+        if(e == null) {
+            e = new HashMap();
+            sConstructors.set(e);
+        }
+
+        Constructor c = (Constructor)((Map)e).get(fullName);
+        if(c == null) {
+            Class clazz = Class.forName(fullName, true, context.getClassLoader());//用反射获取类
+            c = clazz.getConstructor(CONSTRUCTOR_PARAMS);//通过构造方法获取实例
+           ((Map)e).put(fullName, c);
+        }
+
+        return (CoordinatorLayout.Behavior)c.newInstance(new Object[]{context, attrs});
+    } catch (Exception var7) {
+        throw new RuntimeException(&amp;quot;Could not inflate Behavior subclass &amp;quot; + fullName, var7);
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;可以看到这个方法，通过拼接路径，然后用反射的方式获取到了behavior的实例。这样View就成功获取到了behavior。&lt;/p&gt;
+&lt;h2 id=&quot;通用动作的实现&quot;&gt;&lt;a href=&quot;#通用动作的实现&quot; class=&quot;headerlink&quot; title=&quot;通用动作的实现&quot;&gt;&lt;/a&gt;通用动作的实现&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;Behavior中有很多可以实现的接口。在我看来关于动作的方法大概可以分成两类。先说第一类；&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;pre&gt;&lt;code&gt;public boolean layoutDependsOn(CoordinatorLayout parent, V child, View dependency) 
+public boolean onDependentViewChanged(CoordinatorLayout parent, V child, View dependency) 
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;这两个方法主要实现通用的的关联动作，各种view的改变都可以使用。&lt;br&gt;下面看一下他们的作用以及调用关系。&lt;br&gt;前两个方法和主要是在dispatchOnDependentViewChanged方法中调用，我们先看看在哪里调用了这个方法。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;class OnPreDrawListener implements android.view.ViewTreeObserver.OnPreDrawListener {
+    OnPreDrawListener() {
+    }
+
+    public boolean onPreDraw() {
+        CoordinatorLayout.this.dispatchOnDependentViewChanged(false);
+        return true;
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;主要是在这个listener中，再看一下哪里注册了这个监听：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;public void onAttachedToWindow() {
+    super.onAttachedToWindow();
+    this.resetTouchBehaviors();
+    if(this.mNeedsPreDrawListener) {
+        if(this.mOnPreDrawListener == null) {
+            this.mOnPreDrawListener = new CoordinatorLayout.OnPreDrawListener();
+    }
+
+    ViewTreeObserver vto = this.getViewTreeObserver();
+    vto.addOnPreDrawListener(this.mOnPreDrawListener);
+    }
+
+    this.mIsAttachedToWindow = true;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;主要是在onAttachedToWindow里。也就是说在coordinatorlayout绑定到窗口是，就会直接注册这个监听，每次要绘制view之前都会i调用dispatchOnDependentViewChanged方法。现在再来看一下刚才提到的dispatchOnDependentViewChanged的具体实现：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;void dispatchOnDependentViewChanged(boolean fromNestedScroll) {
+    int layoutDirection = ViewCompat.getLayoutDirection(this);
+    int childCount = this.mDependencySortedChildren.size();
+
+    for(int i = 0; i &amp;lt; childCount; ++i) {
+        View child = (View)this.mDependencySortedChildren.get(i);
+        CoordinatorLayout.LayoutParams lp = (CoordinatorLayout.LayoutParams)child.getLayoutParams();
+
+        for(int oldRect = 0; oldRect &amp;lt; i; ++oldRect) {
+        View newRect = (View)this.mDependencySortedChildren.get(oldRect);
+        if(lp.mAnchorDirectChild == newRect) {
+            this.offsetChildToAnchor(child, layoutDirection);
+            }
+        }
+
+        Rect var14 = this.mTempRect1;
+        Rect var15 = this.mTempRect2;
+        this.getLastChildRect(child, var14);
+        this.getChildRect(child, true, var15);
+        if(!var14.equals(var15)) {
+            this.recordLastChildRect(child, var15);
+
+            for(int j = i + 1; j &amp;lt; childCount; ++j) {
+                View checkChild = (View)this.mDependencySortedChildren.get(j);
+                CoordinatorLayout.LayoutParams checkLp = (CoordinatorLayout.LayoutParams)checkChild.getLayoutParams();
+                CoordinatorLayout.Behavior b = checkLp.getBehavior();
+                if(b != null &amp;amp;&amp;amp; b.layoutDependsOn(this, checkChild, child)) {
+                    if(!fromNestedScroll &amp;amp;&amp;amp; checkLp.getChangedAfterNestedScroll()) {
+                        checkLp.resetChangedAfterNestedScroll();
+                    } else {
+                        boolean handled = b.onDependentViewChanged(this, checkChild, child);
+                        if(fromNestedScroll) {
+                        checkLp.setChangedAfterNestedScroll(handled);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;只看我们关心的部分，也就是最下边的for循环，可以看出coordinatorlayout会循环获取每个子view的behavior。然后在if中看到了b.layoutDependsOn，if里面有b.onDependentViewChanged。&lt;br&gt;也就是说，当view改变时，如果通过符合我们自己实现的某些条件（这个条件在layoutDependsOn中定义），就会调用onDependentViewChanged方法，实现我们需要的动作。&lt;/p&gt;
+&lt;h2 id=&quot;滚动动作的实现&quot;&gt;&lt;a href=&quot;#滚动动作的实现&quot; class=&quot;headerlink&quot; title=&quot;滚动动作的实现&quot;&gt;&lt;/a&gt;滚动动作的实现&lt;/h2&gt;&lt;p&gt;下面就是第二类，专门针对滚动动作的接口&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;public boolean onStartNestedScroll(CoordinatorLayout coordinatorLayout, V child, View directTargetChild, View target, int nestedScrollAxes) 
+public void onNestedScrollAccepted(CoordinatorLayout coordinatorLayout, V child, View directTargetChild, View target, int nestedScrollAxes) 
+public void onStopNestedScroll(CoordinatorLayout coordinatorLayout, V child, View target) 
+public void onNestedScroll(CoordinatorLayout coordinatorLayout, V child, View target, int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed)
+public void onNestedPreScroll(CoordinatorLayout coordinatorLayout, V child, View target, int dx, int dy, int[] consumed)
+public boolean onNestedFling(CoordinatorLayout coordinatorLayout, V child, View target, float velocityX, float velocityY, boolean consumed) 
+public boolean onNestedPreFling(CoordinatorLayout coordinatorLayout, V child, View target, float velocityX, float velocityY) 
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;可以看到有很多方法，针对各种不同的滚动以及不同的阶段。&lt;br&gt;这个单在coordinatorlayout中很难看清楚如何调用，因为它涉及到了，接口，以及其他的view。就从事件的源头看，也就是NestedScrollView。&lt;br&gt;首先看NestedScrollView，它实现了NestedScrollingChild接口，这个接口有很多方法，我们就找startNestedScroll这个方法，这个从名称来看，应该跟上边的onStartNestedScroll方法对应。&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;@Override
+public boolean startNestedScroll(int axes) {
+    return mChildHelper.startNestedScroll(axes);
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;先看看哪里调用了这个方法，果然是touch事件触发的：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;@Override
+public boolean onInterceptTouchEvent(MotionEvent ev) {   
+    final int action = ev.getAction();
+    switch (action &amp;amp; MotionEventCompat.ACTION_MASK) {
+        case MotionEvent.ACTION_DOWN: {
+            startNestedScroll(ViewCompat.SCROLL_AXIS_VERTICAL);
+            break;
+        }
+    }
+    return mIsBeingDragged;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;再跟进这个方法，可以看到是在NestedScrollingChildHelper中实现的&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;public boolean startNestedScroll(int axes) {
+    if (hasNestedScrollingParent()) {
+        // Already in progress
+        return true;
+    }
+    if (isNestedScrollingEnabled()) {
+        ViewParent p = mView.getParent();
+        View child = mView;
+        while (p != null) {
+            if (ViewParentCompat.onStartNestedScroll(p, child, mView, axes)) {
+                mNestedScrollingParent = p;
+                ViewParentCompat.onNestedScrollAccepted(p, child, mView, axes);
+                return true;
+            }
+            if (p instanceof View) {
+                child = (View) p;
+            }
+            p = p.getParent();
+        }
+    }
+    return false;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;这个方法主要是循环网上找parent，直到符合条件，条件就是ViewParentCompat.onStartNestedScroll(p, child, mView, axes)，具体看一下这个方法：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;public static boolean onStartNestedScroll(ViewParent parent, View child, View target,
+    int nestedScrollAxes) {
+    return IMPL.onStartNestedScroll(parent, child, target, nestedScrollAxes);
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;再往下点：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;static final ViewParentCompatImpl IMPL;
+static {
+    final int version = Build.VERSION.SDK_INT;
+    if (version &amp;gt;= 21) {
+        IMPL = new ViewParentCompatLollipopImpl();
+    } else if (version &amp;gt;= 19) {
+        IMPL = new ViewParentCompatKitKatImpl();
+    } else if (version &amp;gt;= 14) {
+        IMPL = new ViewParentCompatICSImpl();
+    } else {
+        IMPL = new ViewParentCompatStubImpl();
+    }
+}    
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;这里是一个版本判断。我们app支持的最小版本是16，所以肯定看第三个：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;@Override
+public boolean onStartNestedScroll(ViewParent parent, View child, View target,int nestedScrollAxes) {
+    if (parent instanceof NestedScrollingParent) {
+        return ((NestedScrollingParent) parent).onStartNestedScroll(child, target,nestedScrollAxes);
+    }
+    return false;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;所这里可以看到，如果想要实现滚动的关联，要求父view必须实现NestedScrollingParent接口，然后调用这个接口的onStartNestedScroll方法。&lt;br&gt;好了，现在再返回头来看：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;public class CoordinatorLayout extends ViewGroup implements NestedScrollingParent 
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;CoordinatorLayout 刚好实现了这个接口，所以如果它的子view如果实现了NestedScrollingChild接口就可以实现滚动动作的联动了&lt;br&gt;再来看下这个方法的具体实现：&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;public boolean onStartNestedScroll(View child, View target, int nestedScrollAxes) {
+    boolean handled = false;
+    int childCount = this.getChildCount();
+
+    for(int i = 0; i &amp;lt; childCount; ++i) {
+        View view = this.getChildAt(i);
+        CoordinatorLayout.LayoutParams lp = (CoordinatorLayout.LayoutParams)view.getLayoutParams();
+        CoordinatorLayout.Behavior viewBehavior = lp.getBehavior();
+        if(viewBehavior != null) {
+            boolean accepted = viewBehavior.onStartNestedScroll(this, view, child, target, nestedScrollAxes);
+            handled |= accepted;
+            lp.acceptNestedScroll(accepted);
+        } else {
+            lp.acceptNestedScroll(false);
+        }
+    }
+
+    return handled;
+}
+&lt;/code&gt;&lt;/pre&gt;&lt;p&gt;可以看到，最终还是通过调用其behavior中的onStartNestedScroll实现了具体的动作。&lt;/p&gt;
+</content>
+    
+    <summary type="html">
+    
+      &lt;h2 id=&quot;获取Behavior&quot;&gt;&lt;a href=&quot;#获取Behavior&quot; class=&quot;headerlink&quot; title=&quot;获取Behavior&quot;&gt;&lt;/a&gt;获取Behavior&lt;/h2&gt;&lt;blockquote&gt;
+&lt;p&gt;CoordinatorLayout中子view关联
+    
+    </summary>
+    
+    
+      <category term="Material Design behavior" scheme="https://github.com/mjnhmd/tags/Material-Design-behavior/"/>
+    
+  </entry>
+  
+  <entry>
     <title>Handler实现原理</title>
     <link href="https://github.com/mjnhmd/2016/03/23/Handler%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86/"/>
     <id>https://github.com/mjnhmd/2016/03/23/Handler实现原理/</id>
     <published>2016-03-23T12:52:31.000Z</published>
-    <updated>2016-03-23T12:55:07.208Z</updated>
+    <updated>2016-04-05T10:19:25.256Z</updated>
     
     <content type="html">&lt;p&gt;今天在尝试把百度定位sdk的初始化转移到子线程时，遇到了一个问题：&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;java.lang.RuntimeException: Can&amp;apos;t create handler inside thread that has not called Looper.prepare()
@@ -143,6 +385,8 @@ private static void prepare(boolean quitAllowed) {
     </summary>
     
     
+      <category term="java" scheme="https://github.com/mjnhmd/tags/java/"/>
+    
   </entry>
   
   <entry>
@@ -150,7 +394,7 @@ private static void prepare(boolean quitAllowed) {
     <link href="https://github.com/mjnhmd/2016/03/16/hello-world/"/>
     <id>https://github.com/mjnhmd/2016/03/16/hello-world/</id>
     <published>2016-03-16T02:41:26.515Z</published>
-    <updated>2016-03-16T07:06:57.632Z</updated>
+    <updated>2016-04-05T10:22:39.960Z</updated>
     
     <content type="html">&lt;p&gt;Welcome to &lt;a href=&quot;https://hexo.io/&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;Hexo&lt;/a&gt;! This is your very first post. Check &lt;a href=&quot;https://hexo.io/docs/&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;documentation&lt;/a&gt; for more info. If you get any problems when using Hexo, you can find the answer in &lt;a href=&quot;https://hexo.io/docs/troubleshooting.html&quot; target=&quot;_blank&quot; rel=&quot;external&quot;&gt;troubleshooting&lt;/a&gt; or you can ask me on &lt;a href=&quot;https://github.com/hexojs/hexo/issues&quot;&gt;GitHub&lt;/a&gt;.&lt;/p&gt;
 &lt;h2 id=&quot;Quick-Start&quot;&gt;&lt;a href=&quot;#Quick-Start&quot; class=&quot;headerlink&quot; title=&quot;Quick Start&quot;&gt;&lt;/a&gt;Quick Start&lt;/h2&gt;&lt;h3 id=&quot;Create-a-new-post&quot;&gt;&lt;a href=&quot;#Create-a-new-post&quot; class=&quot;headerlink&quot; title=&quot;Create a new post&quot;&gt;&lt;/a&gt;Create a new post&lt;/h3&gt;&lt;figure class=&quot;highlight bash&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;$ hexo new &lt;span class=&quot;string&quot;&gt;&quot;My New Post&quot;&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;/figure&gt;
