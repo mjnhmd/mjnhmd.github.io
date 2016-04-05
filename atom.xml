@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://github.com/mjnhmd/"/>
-  <updated>2016-04-05T10:38:43.350Z</updated>
+  <updated>2016-04-05T10:46:33.283Z</updated>
   <id>https://github.com/mjnhmd/</id>
   
   <author>
@@ -20,7 +20,7 @@
     <link href="https://github.com/mjnhmd/2016/04/05/CoordinatorLayout%E8%B0%83%E7%94%A8%E5%8E%9F%E7%90%86%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90/"/>
     <id>https://github.com/mjnhmd/2016/04/05/CoordinatorLayout调用原理源码解析/</id>
     <published>2016-04-05T10:15:54.000Z</published>
-    <updated>2016-04-05T10:38:43.350Z</updated>
+    <updated>2016-04-05T10:46:33.283Z</updated>
     
     <content type="html">&lt;h2 id=&quot;获取Behavior&quot;&gt;&lt;a href=&quot;#获取Behavior&quot; class=&quot;headerlink&quot; title=&quot;获取Behavior&quot;&gt;&lt;/a&gt;获取Behavior&lt;/h2&gt;&lt;blockquote&gt;
 &lt;p&gt;CoordinatorLayout中子view关联的动作主要由Behavior实现。&lt;br&gt;系统控件中往往把behavior作为内部类，自己实现，比如AppbarLayout。&lt;br&gt;当然我们也可以自己实现自定义的Behavior来完成我们需要的动作。&lt;br&gt;自定义Behavior时，我们需要在xml代码中实现相应属性，例如：&lt;/p&gt;
@@ -253,7 +253,9 @@ public boolean onStartNestedScroll(ViewParent parent, View child, View target,in
     </summary>
     
     
-      <category term="Material Design behavior" scheme="https://github.com/mjnhmd/tags/Material-Design-behavior/"/>
+      <category term="Material Designed" scheme="https://github.com/mjnhmd/tags/Material-Designed/"/>
+    
+      <category term="behavior" scheme="https://github.com/mjnhmd/tags/behavior/"/>
     
   </entry>
   
