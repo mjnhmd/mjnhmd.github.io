@@ -23,7 +23,7 @@ java.lang.RuntimeException: Can&amp;apos;t create handler inside thread that has
 java.lang.RuntimeException: Can&amp;apos;t create handler inside thread that has not called Looper.prepare()
 这个问题并不少见，网上一搜有很多。解决方法就是在创建handler时传入Looper.getMainLooper()。
 但">
-<meta property="og:updated_time" content="2016-04-05T10:19:25.256Z">
+<meta property="og:updated_time" content="2016-04-05T10:55:18.538Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Handler实现原理">
 <meta name="twitter:description" content="今天在尝试把百度定位sdk的初始化转移到子线程时，遇到了一个问题：
@@ -223,6 +223,11 @@ private static void prepare(boolean quitAllowed) {
 		<footer class="article-footer clearfix">
 <div class="article-catetags">
 
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Android/">Android</a>
+</div>
+
 
   <div class="article-tags">
   
@@ -298,6 +303,17 @@ private static void prepare(boolean quitAllowed) {
 
 
   
+<div class="categorieslist">
+	<p class="asidetitle">分类</p>
+		<ul>
+		
+		  
+			<li><a href="/categories/Android/" title="Android">Android<sup>2</sup></a></li>
+		  
+		
+		</ul>
+</div>
+
 
   
 <div class="tagslist">
