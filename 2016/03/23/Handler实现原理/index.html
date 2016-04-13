@@ -23,7 +23,7 @@ java.lang.RuntimeException: Can&amp;apos;t create handler inside thread that has
 java.lang.RuntimeException: Can&amp;apos;t create handler inside thread that has not called Looper.prepare()
 这个问题并不少见，网上一搜有很多。解决方法就是在创建handler时传入Looper.getMainLooper()。
 但">
-<meta property="og:updated_time" content="2016-04-05T10:55:18.538Z">
+<meta property="og:updated_time" content="2016-04-13T11:01:26.848Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Handler实现原理">
 <meta name="twitter:description" content="今天在尝试把百度定位sdk的初始化转移到子线程时，遇到了一个问题：
@@ -89,10 +89,7 @@ java.lang.RuntimeException: Can&amp;apos;t create handler inside thread that has
     
       <a href="/2016/03/23/Handler实现原理/" title="Handler实现原理" itemprop="url">Handler实现原理</a>
   </h1>
-  <p class="article-author">By
-       
-		<a href="/about" title="MJN" target="_blank" itemprop="author">MJN</a>
-		
+  
   <p class="article-time">
     <time datetime="2016-03-23T12:52:31.000Z" itemprop="datePublished"> 发表于 2016-03-23</time>
     
@@ -311,6 +308,10 @@ private static void prepare(boolean quitAllowed) {
 			<li><a href="/categories/Android/" title="Android">Android<sup>2</sup></a></li>
 		  
 		
+		  
+			<li><a href="/categories/影评/" title="影评">影评<sup>1</sup></a></li>
+		  
+		
 		</ul>
 </div>
 
@@ -330,6 +331,10 @@ private static void prepare(boolean quitAllowed) {
 		
 			
 				<li><a href="/tags/java/" title="java">java<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/影评/" title="影评">影评<sup>1</sup></a></li>
 			
 		
 		</ul>
