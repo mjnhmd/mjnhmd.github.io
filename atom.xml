@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://github.com/mjnhmd/"/>
-  <updated>2016-04-13T10:19:56.025Z</updated>
+  <updated>2016-04-14T11:13:57.083Z</updated>
   <id>https://github.com/mjnhmd/</id>
   
   <author>
@@ -14,6 +14,24 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>test</title>
+    <link href="https://github.com/mjnhmd/2016/04/14/test/"/>
+    <id>https://github.com/mjnhmd/2016/04/14/test/</id>
+    <published>2016-04-14T11:13:57.000Z</published>
+    <updated>2016-04-14T11:13:57.083Z</updated>
+    
+    <content type="html"></content>
+    
+    <summary type="html">
+    
+    </summary>
+    
+      <category term="Android" scheme="https://github.com/mjnhmd/categories/Android/"/>
+    
+    
+  </entry>
   
   <entry>
     <title>鹿的消逝：对电影《犴达罕》的解读</title>
