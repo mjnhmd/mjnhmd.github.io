@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://github.com/mjnhmd/"/>
-  <updated>2016-04-18T07:44:36.427Z</updated>
+  <updated>2016-04-18T11:42:29.561Z</updated>
   <id>https://github.com/mjnhmd/</id>
   
   <author>
@@ -20,9 +20,9 @@
     <link href="https://github.com/mjnhmd/2016/04/14/MarkDown%E7%AE%80%E5%8C%96%E8%B4%B4%E5%9B%BE%E6%B5%81%E7%A8%8B/"/>
     <id>https://github.com/mjnhmd/2016/04/14/MarkDown简化贴图流程/</id>
     <published>2016-04-14T11:32:50.000Z</published>
-    <updated>2016-04-18T07:44:36.427Z</updated>
+    <updated>2016-04-18T11:42:29.561Z</updated>
     
-    <content type="html">&lt;h2 id=&quot;动机&quot;&gt;&lt;a href=&quot;#动机&quot; class=&quot;headerlink&quot; title=&quot;动机&quot;&gt;&lt;/a&gt;动机&lt;/h2&gt;&lt;p&gt;这个个原因还用说吗，完全是实刚需啊！！！以前写个markdown想要贴个图简直让人崩溃啊！！！&lt;/p&gt;
+    <content type="html">&lt;h2 id=&quot;动机&quot;&gt;&lt;a href=&quot;#动机&quot; class=&quot;headerlink&quot; title=&quot;动机&quot;&gt;&lt;/a&gt;动机&lt;/h2&gt;&lt;p&gt;这个原因还用说吗，完全是刚需啊！！！以前写个markdown想要贴个图简直让人崩溃啊！！！&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;你可能先要截个图&lt;/li&gt;
 &lt;li&gt;然后打开浏览器&lt;/li&gt;
@@ -61,7 +61,7 @@ Run %comspec%  /c &amp;quot;Python D:\qiniu\upload_qiniu.py&amp;quot; %Clipboard
         /#执行python脚本，并从剪贴板中获取值，这个值就是刚才执行的复制操作的值，也就是选中的图片
 return   #返回
 &lt;/code&gt;&lt;/pre&gt;&lt;p&gt;这里这个脚本逻辑很清楚并且能够正常执行，是不需要修改的。&lt;/p&gt;
-&lt;p&gt;再看一下python脚本，虽然不懂python语言，但是勉强还是能看到懂一些大概逻辑：&lt;/p&gt;
+&lt;p&gt;再看一下python脚本，虽然不懂python语言，但是勉强还是能看懂一些大概逻辑：&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;# -*- coding: utf-8 -*-
 
 import os
@@ -162,9 +162,9 @@ else:
     
     <summary type="html">
     
-      &lt;h2 id=&quot;动机&quot;&gt;&lt;a href=&quot;#动机&quot; class=&quot;headerlink&quot; title=&quot;动机&quot;&gt;&lt;/a&gt;动机&lt;/h2&gt;&lt;p&gt;这个个原因还用说吗，完全是实刚需啊！！！以前写个markdown想要贴个图简直让人崩溃啊！！！&lt;/p&gt;
+      &lt;h2 id=&quot;动机&quot;&gt;&lt;a href=&quot;#动机&quot; class=&quot;headerlink&quot; title=&quot;动机&quot;&gt;&lt;/a&gt;动机&lt;/h2&gt;&lt;p&gt;这个原因还用说吗，完全是刚需啊！！！以前写个markdown想要贴个图简直让人崩溃啊！！！&lt;/p&gt;
 &lt;ul&gt;
-&lt;li&gt;你可能先要截个图&lt;
+&lt;li&gt;你可能先要截个图&lt;/l
     
     </summary>
     
