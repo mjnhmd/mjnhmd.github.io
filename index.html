@@ -75,6 +75,201 @@
 
    
     
+    <article class="post-expand post" itemprop="articleBody"> 
+        <header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2016/04/14/MarkDown简化贴图流程/" title="MarkDown简化贴图流程" itemprop="url">MarkDown简化贴图流程</a>
+  </h1>
+   
+  <p class="article-time">
+    <time datetime="2016-04-14T11:32:50.000Z" itemprop="datePublished"> 发表于 2016-04-14</time>
+    
+  </p>
+</header>
+    <div class="article-content">
+        
+        <h2 id="动机"><a href="#动机" class="headerlink" title="动机"></a>动机</h2><p>这个个原因还用说吗，完全是实刚需啊！！！以前写个markdown想要贴个图简直让人崩溃啊！！！</p>
+<ul>
+<li>你可能先要截个图</li>
+<li>然后打开浏览器</li>
+<li>打开你的图床网站</li>
+<li>点击上传图片</li>
+<li>等待上传完成</li>
+<li>复制外链</li>
+<li>返回markdown</li>
+<li>当然这是只是一个url，你还得写成markdown的格式，才算完成</li>
+</ul>
+<p>执行完这些操作之后，思路早就跑到九霄云外了有木有，写文章的激情早就耗尽了！！！</p>
+<p>MarkDown作为一个逼格满满新潮写作方式，竟然还存在这种反人类的操作，实在是让人不能忍啊。</p>
+<h2 id="尝试"><a href="#尝试" class="headerlink" title="尝试"></a>尝试</h2><p>于是就去google了一下，果然有很多人一样忍不了，并且找出了解决办法。搜到了三位大神的文章：</p>
+<ul>
+<li><a href="http://tianweishu.com/2015/10/16/simplify-the-img-upload-in-markdown/" target="_blank" rel="external">简化markdown写作中的贴图流程</a> 这个是写的很好，可是是mac的</li>
+<li><a href="http://mickir.xyz/blog/2015/12/simplify-the-img-upload-in-markdown.html" target="_blank" rel="external">简化markdown中的贴图流程</a> 这个是借鉴上问的windows版，作者是大神，写的比较简略。这里边的利用微信dll截图的功能非常值得借鉴</li>
+<li><a href="https://github.com/xzop/markdown-img-upload-windows/blob/master/ReadMe.md">markdown-img-upload-windows</a>这个是github项目，可能是dll版本不对，我这里不成功</li>
+</ul>
+<p>需要的东西：</p>
+<ol>
+<li>python环境</li>
+<li>AutoHotKey</li>
+<li>windows系统</li>
+<li>七牛云存储账户</li>
+<li>没了</li>
+</ol>
+<p>七牛肯定是有了，python也装过，所差的就是一个软件而已嘛，于是装了个破解版，按照操作做。果然，并不能成功。。</p>
+<p>照着做都不行，于是就只能自己修改了。</p>
+<h2 id="修改"><a href="#修改" class="headerlink" title="修改"></a>修改</h2><p>相比起来第三篇比较完整，有源码有解释，只是某个功能需要修改。于是就尝试着对脚本进行修改。</p>
+<p>一共就两个脚本，一个是AutoHotKey自己的脚本，一个是Python脚本。很凑巧的是，对这两个都一窍不通。</p>
+<p>只能硬着头皮上，看了一下AutoHotKey自带的介绍，并不是很难，大概就是把某个快捷键绑定相应的功能，代码是这样的：</p>
+<pre><code>^!c::    #^代表ctrl，!代表alt，也就是说是让ctrl+alt+c执行相应的功能
+send, ^c #首先执行Ctrl+c，也就是复制。也就是把选中的图片放到剪切板中
+clipwait #然后做一个延迟，等待复制操作完成
+Run %comspec%  /c &quot;Python D:\qiniu\upload_qiniu.py&quot; %Clipboard% /p 
+        /#执行python脚本，并从剪贴板中获取值，这个值就是刚才执行的复制操作的值，也就是选中的图片
+return   #返回
+</code></pre><p>这里这个脚本逻辑很清楚并且能够正常执行，是不需要修改的。</p>
+<p>再看一下python脚本，虽然不懂python语言，但是勉强还是能看到懂一些大概逻辑：</p>
+<pre><code># -*- coding: utf-8 -*-
+
+import os
+import sys
+reload(sys)
+sys.setdefaultencoding(&apos;utf-8&apos;)
+
+from qiniu import Auth, put_file
+import qiniu.config
+
+from ctypes import *
+import time
+
+import ConfigParser
+from datetime import datetime
+
+#这部分显然是从config中获取到我们设置好的一些参数
+cf = ConfigParser.ConfigParser()
+cf.read(&apos;config.ini&apos;)
+access_key = cf.get(&apos;qiniu&apos;, &apos;ak&apos;) # AK
+secret_key = cf.get(&apos;qiniu&apos;, &apos;sk&apos;) # SK
+bucket_name = cf.get(&apos;qiniu&apos;, &apos;bucket&apos;) # 七牛空间名
+url = cf.get(&apos;qiniu&apos;, &apos;url&apos;) # url
+
+q = Auth(access_key, secret_key)
+
+mime_type = &quot;image/jpeg&quot;
+params = {&apos;x:a&apos;: &apos;a&apos;}
+
+prefix = datetime.now().strftime(&apos;%Y_%m_%d&apos;)
+
+def upload_qiniu(path, prefix): #这是具体的上传图片方法，主要是调用七牛的sdk
+&apos;&apos;&apos; upload file to qiniu &apos;&apos;&apos;
+dirname, filename = os.path.split(path)
+key = &apos;%s_%s&apos; % (prefix, filename) # upload to qiniu&apos;s dir
+key = key.decode(&apos;gbk&apos;).encode(&apos;utf8&apos;)
+
+token = q.upload_token(bucket_name, key)
+progress_handler = lambda progress, total: progress
+ret, info = put_file(token, key, path, params, mime_type, progress_handler=progress_handler)
+return ret != None and ret[&apos;key&apos;] == key
+
+if __name__ == &apos;__main__&apos;:
+path = sys.argv[1] #这里显然是获取图片的路径，也就是我们从剪切板里获取的
+ret = upload_qiniu(path, prefix) 这是执行上面的上传方法
+if ret:
+    # upload success 如果成功则把url拼成markdown格式
+    name = os.path.split(path)[1]
+    alt = name.split(&apos;.&apos;, 1)
+    markdown_url = &quot;![%s](%s/%s_%s \&quot;%s\&quot;)&quot; % (alt[0], url, prefix, name, alt[0])
+    # make it to clipboard 然后调用ahk的dll库吧它放进剪贴板，这样我们直接复制就可以了。 我就是这里没有执行成功。
+    ahk = cdll.AutoHotkey #load AutoHotkey
+    ahk.ahktextdll(&quot;&quot;) #start script in persistent mode (wait for action)
+    while not ahk.ahkReady(): #Wait for AutoHotkey.dll to start
+        time.sleep(0.01)
+    ahk.ahkExec(u&quot;clipboard = %s&quot; % markdown_url.decode(&apos;gbk&apos;))
+else: print &quot;upload_failed&quot;
+</code></pre><p>整个脚本也简单，就一个主函数，一个上传函数，经过运行我发现上传没问题，能够成功上传，只是把它放入剪贴板中存在问题，为此我还安装了个pycharm，输出的log显示ahk.dll调用失败。</p>
+<p>但是把一个字符串放入剪贴板显然不只有这一种方法。于是我又查了一下直接用python自己能不能实现这个功能，果然没什么是强大的python做不到的。于是我把主函数改成了这样：</p>
+<pre><code>def setText(aString):
+w.OpenClipboard()
+w.EmptyClipboard()
+w.SetClipboardText(aString)
+w.CloseClipboard()
+
+if __name__ == &apos;__main__&apos;:
+path = sys.argv[1]
+ret = upload_qiniu(path, prefix)
+if ret:
+    # upload success
+    name = os.path.split(path)[1]
+    alt = name.split(&apos;.&apos;, 1)
+    markdown_url = &quot;![%s](%s/%s_%s \&quot;%s\&quot;)&quot; % (alt[0], url, prefix, name, alt[0])
+    # make it to clipboard
+    setText(markdown_url)
+else:
+    print &quot;upload_failed&quot;
+</code></pre><p>这里又加了个方法，简单的四行代码就可以实现剪切板的操作。这样，终于成功了。</p>
+<h2 id="使用："><a href="#使用：" class="headerlink" title="使用："></a>使用：</h2><ul>
+<li><p>首先配置config.ini：</p>
+<ul>
+<li>[qiniu]</li>
+<li>ak     = # 填入你的AK</li>
+<li>sk     = # 填入你的SK</li>
+<li>url    = # 填入你的域名地址</li>
+<li>bucket = # 填入你的七牛空间名称</li>
+<li>注意！！！注释一定都要删掉， 写值时不要加引号。ak,sk不是用户名和密码，是在账户管理中的密钥管理那里找到。填完是这样婶儿的：<br><img src="http://7xry4c.com1.z0.glb.clouddn.com//2016_04_15_qiniuconfig.png" alt="qiniuconfig" title="qiniuconfig"></li>
+</ul>
+</li>
+<li><p>然后是把config.ini和upload_qiniu.py放到同一个目录。</p>
+</li>
+<li>然后修改upload_qiniu.ahk中的upload_qiniu.py路径</li>
+<li>然后双击upload_qiniu.ahk就可以了。</li>
+<li>用鼠标左键点击一张图片，然后点击ctrl+alt+c，然后窗口消失后再markdown里ctrl+v 神奇的事就发生了！</li>
+</ul>
+<p>现在图片完全就是一键上传，一键贴到markdown了。</p>
+
+        
+        
+        <p class="article-more-link">
+          
+       </p>
+    </div>
+    <footer class="article-footer clearfix">
+<div class="article-catetags">
+
+<div class="article-categories">
+  <span></span>
+  <a class="article-category-link" href="/categories/Hexo/">Hexo</a>
+</div>
+
+
+  <div class="article-tags">
+  
+  <span></span> <a href="/tags/Hexo/">Hexo</a><a href="/tags/MarkDown/">MarkDown</a><a href="/tags/python/">python</a>
+  </div>
+
+</div>
+
+
+
+
+<div class="comments-count">
+	
+	  	<span></span>
+		<a href="/2016/04/14/MarkDown简化贴图流程/#comments" class="ds-thread-count comments-count-link" data-thread-key="2016/04/14/MarkDown简化贴图流程/" data-count-type="comments">&nbsp;</a>
+	
+</div>
+
+</footer>
+
+
+    </article>
+
+
+
+
+
+
+   
+    
     <article class="post-expand photo" itemprop="articleBody"> 
         <header class="article-info clearfix">
   <h1 itemprop="name">
@@ -617,6 +812,10 @@ private static void prepare(boolean quitAllowed) {
 		  
 		
 		  
+			<li><a href="/categories/Hexo/" title="Hexo">Hexo<sup>1</sup></a></li>
+		  
+		
+		  
 			<li><a href="/categories/影评/" title="影评">影评<sup>1</sup></a></li>
 		  
 		
@@ -630,15 +829,27 @@ private static void prepare(boolean quitAllowed) {
 		<ul class="clearfix">
 		
 			
-				<li><a href="/tags/java/" title="java">java<sup>1</sup></a></li>
-			
-		
-			
 				<li><a href="/tags/Material-Designed/" title="Material Designed">Material Designed<sup>1</sup></a></li>
 			
 		
 			
 				<li><a href="/tags/behavior/" title="behavior">behavior<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/java/" title="java">java<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/Hexo/" title="Hexo">Hexo<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/MarkDown/" title="MarkDown">MarkDown<sup>1</sup></a></li>
+			
+		
+			
+				<li><a href="/tags/python/" title="python">python<sup>1</sup></a></li>
 			
 		
 			
