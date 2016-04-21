@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://github.com/mjnhmd/"/>
-  <updated>2016-04-21T02:20:10.327Z</updated>
+  <updated>2016-04-21T02:21:22.641Z</updated>
   <id>https://github.com/mjnhmd/</id>
   
   <author>
@@ -20,7 +20,7 @@
     <link href="https://github.com/mjnhmd/2016/04/14/MarkDown%E7%AE%80%E5%8C%96%E8%B4%B4%E5%9B%BE%E6%B5%81%E7%A8%8B/"/>
     <id>https://github.com/mjnhmd/2016/04/14/MarkDown简化贴图流程/</id>
     <published>2016-04-14T11:32:50.000Z</published>
-    <updated>2016-04-21T02:20:10.327Z</updated>
+    <updated>2016-04-21T02:21:22.641Z</updated>
     
     <content type="html">&lt;h2 id=&quot;动机&quot;&gt;&lt;a href=&quot;#动机&quot; class=&quot;headerlink&quot; title=&quot;动机&quot;&gt;&lt;/a&gt;动机&lt;/h2&gt;&lt;p&gt;这个原因还用说吗，完全是刚需啊！！！以前写个markdown想要贴个图简直让人崩溃啊！！！&lt;/p&gt;
 &lt;ul&gt;
@@ -158,8 +158,7 @@ else:
 &lt;li&gt;用鼠标左键点击一张图片，然后点击ctrl+alt+c，然后窗口消失后再markdown里ctrl+v 神奇的事就发生了！&lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;现在图片完全就是一键上传，一键贴到markdown了。&lt;/p&gt;
-&lt;p&gt;###&lt;a href=&quot;https://github.com/mjnhmd/markdown-upload-qiniu&quot;&gt;源码在这&lt;/a&gt;&lt;/p&gt;
-</content>
+&lt;h3 id=&quot;源码在这&quot;&gt;&lt;a href=&quot;#源码在这&quot; class=&quot;headerlink&quot; title=&quot;源码在这&quot;&gt;&lt;/a&gt;&lt;a href=&quot;https://github.com/mjnhmd/markdown-upload-qiniu&quot;&gt;源码在这&lt;/a&gt;&lt;/h3&gt;</content>
     
     <summary type="html">
     
